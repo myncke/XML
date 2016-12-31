@@ -8,7 +8,7 @@ echo "==========================================================================
   cp -r src/* .bin
 
   cd .bin
-  ghc Main.hs -fno-warn-tabs -XDeriveAnyClass
+  ghc Main.hs -fno-warn-tabs -XGeneralizedNewtypeDeriving
   cd ..
   cp .bin/Main RUN
 

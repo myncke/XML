@@ -3,6 +3,7 @@
 module Parser where
 
 import Data.Char
+import Data.List
 import Control.Monad
 import Control.Monad.State
 import Control.Applicative
@@ -10,11 +11,9 @@ import Control.Applicative
 import ParseData
 import MBot
 
-
 --------------------------------------------------------------------------------
 -- Parser
 --------------------------------------------------------------------------------
-
 newtype Parser a = Parser (String -> [(a, String)])
 
 instance Monad Parser where
@@ -45,10 +44,9 @@ apply (Parser f) s = f s
 parse :: Parser a -> String -> a
 parse m s = one [ x | (x,t) <- apply m s, t == "" ]
   where
-    one [] = error "no parse"
+    one []  = error "no parse"
     one [x] = x
     one xs | length xs > 1 = error "ambiguous parse"
-
 
 --------------------------------------------------------------------------------
 -- Characters (parse one char)
@@ -68,22 +66,37 @@ token c = spot (== c)
 --------------------------------------------------------------------------------
 -- Strings
 --------------------------------------------------------------------------------
-
 match :: String -> Parser String
 match [] = return []
 match (x:xs) = do
   y <- token x;
-                  ys <- match xs;
-                  return (y:ys)
+  ys <- match xs;
+  return (y:ys)
 
 match' :: String -> Parser String
 match' xs = sequence (map token xs)
+
+whitespace :: String -> String
+whitespace x = [c | c <- x , c /= ' ', c /= '\t']
+
+--------------------------------------------------------------------------------
+-- Comments
+--------------------------------------------------------------------------------
+
+comment :: String -> String
+comment "" = ""
+comment y@(x:xs)
+  | x == '#' = ""
+  | otherwise = y
+
+strip :: String -> String
+strip = comment . whitespace
 
 --------------------------------------------------------------------------------
 -- Sequence
 --------------------------------------------------------------------------------
 star :: Parser a -> Parser [a]
-star p = plus p `mplus` return []
+star p = plus p <|> return []
 -- match one or more occurrences
 plus :: Parser a -> Parser [a]
 plus p = do
@@ -95,69 +108,76 @@ plus p = do
 -- Numbers
 --------------------------------------------------------------------------------
 -- match a natural number
-parseNat :: Parser Int
+parseNat :: Parser Float
 parseNat = do s <- plus (spot isDigit)
               return (read s)
 -- match a negative number
-parseNeg :: Parser Int
+parseNeg :: Parser Float
 parseNeg = do token '-'
               n <- parseNat
               return (-n)
 -- match an integer
-parseInt :: Parser Int
-parseInt = parseNat `mplus` parseNeg
+parseInt :: Parser Float
+parseInt = parseNat <|> parseNeg
 
 --------------------------------------------------------------------------------
--- Expressions
+-- Arithmetic Expressions
 --------------------------------------------------------------------------------
-data Exp = Lit Int
-  | Exp :+: Exp
-  | Exp :*: Exp
-  | Exp :/: Exp
-  | Exp :-: Exp
- deriving (Eq,Show)
-
-evalExp :: Exp -> Int
-evalExp (Lit n) = n
-evalExp (e :+: f) = evalExp e + evalExp f
-evalExp (e :*: f) = evalExp e * evalExp f
-evalExp (e :/: f) = evalExp e `div` evalExp f
-evalExp (e :-: f) = evalExp e - evalExp f
-
-
-parseExp :: Parser Exp
-parseExp = parseLit `mplus`
-  parseAdd `mplus`
-  parseMul `mplus`
-  parseDev `mplus`
-  parseSub
+parseAExp :: Parser AExp
+parseAExp = parseLit
+         <|> parseAdd
+         <|> parseMul
+         <|> parseDev
+         <|> parseSub
     where
-      parseLit = parseInt >>= \n -> return (Lit n)
+      parseLit = parseInt >>= \n -> return (ALit n)
       --
       parseAdd = do { token '(';
-        d <- parseExp;
+        d <- parseAExp;
         token '+';
-        e <- parseExp;
+        e <- parseAExp;
         token ')';
-        return (d :+: e) }
+        return (Add d e) }
       --
       parseMul = do { token '(';
-        d <- parseExp;
+        d <- parseAExp;
         token '*';
-        e <- parseExp;
+        e <- parseAExp;
         token ')';
-        return (d :*: e) }
+        return (Mul d e) }
       --
       parseDev = do { token '(';
-        d <- parseExp;
+        d <- parseAExp;
         token '/';
-        e <- parseExp;
+        e <- parseAExp;
         token ')';
-        return (d :/: e) }
+        return (Div d e) }
       --
       parseSub = do { token '(';
-        d <- parseExp;
+        d <- parseAExp;
         token '-';
-        e <- parseExp;
+        e <- parseAExp;
         token ')';
-        return (d :-: e) }
+        return (Min d e) }
+
+
+--------------------------------------------------------------------------------
+-- Boolean Expressions
+--------------------------------------------------------------------------------
+
+
+
+
+
+--------------------------------------------------------------------------------
+-- Statements
+--------------------------------------------------------------------------------
+statement :: Parser Stmt
+statement = undefined
+
+comment' :: Parser Stmt
+comment' = undefined
+-- comment' = do
+--   token $ char literal_COMMENT
+--   many $ satisfy (/= '\n')
+--   return Skip

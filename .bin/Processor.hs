@@ -2,59 +2,76 @@ module Processor where
 
 import Parser
 import ParseData
+import Utils
 
+import Control.Monad.State
+
+--------------------------------------------------------------------------------
+-- Evaluator
+--------------------------------------------------------------------------------
 process :: [String] -> IO()
-process [] = return ()
-process (x:xs) = do
-  putStrLn $ show $ evalExp $ parse parseExp x
-  process xs
+process = undefined
+-- process [] = return ()
+-- process (x:xs)
+--   | (comment x) == "" = process xs
+--   | (println x) /= "" = do putStrLn $ tail x
+--                            process xs
+--   | otherwise = do putStrLn $ show $ evalAExp $ parse parseAExp $ whitespace  x
+--                    process xs
+
+type Evaluator = StateT Environment IO
 
 --------------------------------------------------------------------------------
--- Types
+-- Environment (Map of Strings and Floats)
 --------------------------------------------------------------------------------
--- --
--- type Name = String
---
--- data Term = Var Name
---           | Con Integer
---           | Add Term Term
---           | Lam Name Term
---           | App Term Term
---  deriving (Show,Eq)
---
--- data Value = Wrong
---            | Num Integer
---            | Fun (Value->Value)
---
--- instance Show Value where
---           show Wrong = "Wrong"
---           show (Num i) = "Int " ++ show i
---           show (Fun _) = "function "
---
---
--- type Env = [(Name,Value)]
--- getVar :: Env -> Name -> Value
--- getVar [] _ = Wrong
--- getVar ((k1,v) : r) k2
---  | k1 == k2 = v
---  | otherwise = getVar r k2
+type Environment = [(Identifier, Float)]
 
+find :: Identifier -> Environment -> Maybe Float
+find i [] = Nothing
+find i ((k,v):e)
+  | i == k = Just v
+  | otherwise = lookup i e
+
+add :: Identifier -> Float -> Environment -> Environment
+add i f [] = [(i,f)]
+add i f ((k,v):e)
+  | i == k = (k,f):e
+  | otherwise = (k,v):add i f e
+
+remove :: Identifier -> Environment -> Environment
+remove i [] = []
+remove i ((k,v):e)
+  | i == k = e
+  | otherwise = (k,v):remove i e
 
 --------------------------------------------------------------------------------
--- Other bullshit
+-- Arithmetic Expressions
 --------------------------------------------------------------------------------
 
+evalAExp :: AExp -> Evaluator Float
+evalAExp (ALit n)  = return n
+evalAExp (Add e f) = evalAExp e >>= \ a -> evalAExp f >>= \ b -> return (a + b)
+evalAExp (Mul e f) = evalAExp e >>= \ a -> evalAExp f >>= \ b -> return (a * b)
+evalAExp (Div e f) = evalAExp e >>= \ a -> evalAExp f >>= \ b -> return (a / b)
+evalAExp (Min e f) = evalAExp e >>= \ a -> evalAExp f >>= \ b -> return (a - b)
 
--- add :: Value -> Value -> Value
--- add (Num x) (Num y) = Num (x + y)
--- add _ _ = Wrong
--- apply :: Value -> Value -> Value
--- apply (Fun f) t2 = f t2
--- apply _ _ = Wrong
---
--- eval :: Term -> Env -> Value
--- eval (Var x) env = getVar env x
--- eval (Con x) _ = Num x
--- eval (Add t1 t2) env = add (eval t1 env) (eval t2 env)
--- eval (Lam n b ) env = Fun (\x -> eval b ((n,x) : env))
--- eval (App t1 t2) env = apply (eval t1 env) (eval t2 env)
+--------------------------------------------------------------------------------
+-- Boolean Expressions
+--------------------------------------------------------------------------------
+
+evalBExp :: BExp -> IO Bool
+evalBExp (BLit b) = return b
+evalBExp (Not n)  = evalBExp n >>= \ b -> return (not b)
+
+--------------------------------------------------------------------------------
+-- Statements
+--------------------------------------------------------------------------------
+evaluate :: Stmt -> Evaluator ()
+evaluate (Seq [])     = return ()
+evaluate (Seq (x:xs)) = (evaluate x) >>= \_ -> evaluate (Seq xs)
+evaluate (Assign i e) = (evalAExp e) >>= \v -> get >>= (put . (add i v))
+
+
+--------------------------------------------------------------------------------
+-- MBot Stuff
+--------------------------------------------------------------------------------
