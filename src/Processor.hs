@@ -55,6 +55,7 @@ evalAExp (Add e f) = evalAExp e >>= \ a -> evalAExp f >>= \ b -> return (a + b)
 evalAExp (Mul e f) = evalAExp e >>= \ a -> evalAExp f >>= \ b -> return (a * b)
 evalAExp (Div e f) = evalAExp e >>= \ a -> evalAExp f >>= \ b -> return (a / b)
 evalAExp (Min e f) = evalAExp e >>= \ a -> evalAExp f >>= \ b -> return (a - b)
+evalAExp (Mod e f) = evalAExp e >>= \ a -> evalAExp f >>= \ b -> return (mod a b)
 evalAExp (Var  n)  = get >>= \env -> case find n env of
   Just b -> return b
   Nothing -> fail "Error: couldn't find variable"

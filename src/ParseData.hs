@@ -27,7 +27,7 @@ _PLUS                   = "plus>"
 _MIN                    = "min>"
 _MUL                    = "mul>"
 _DIV                    = "div>"
-_MOD                    = ""
+_MOD                    = "mod>"
 -- Jef
 _JEF                    = "jef>"
 _LIGHT                  = "light>"
@@ -71,6 +71,7 @@ data AExp = Var Identifier
   | Mul AExp AExp
   | Div AExp AExp
   | Min AExp AExp
+  | Mod AExp AExp
     deriving (Eq,Show)
 
 -- BOOLEAN EXPRESSIONS
