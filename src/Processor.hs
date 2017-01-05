@@ -13,7 +13,11 @@ import Control.Monad.State
 --------------------------------------------------------------------------------
 -- to do
 process :: Stmt -> IO ()
-process program = runStateT (evaluate program) [] >> return ()
+process program =
+  openMBot >>= \d
+  -> runStateT (evaluate d program) []
+  >> closeMBot d
+  >> return ()
 
 type Evaluator = StateT Environment IO
 
@@ -21,7 +25,7 @@ type Evaluator = StateT Environment IO
 -- Environment (Map of Strings and Floats)
 --------------------------------------------------------------------------------
 type Environment = [(Identifier, Float)]
-type EnvironmentT = (Environment, Device)
+type EnvironmentT = (Environment, Device) -- todo lenses
 
 find :: Identifier -> Environment -> Maybe Float
 find i [] = Nothing
@@ -99,8 +103,8 @@ evalPExp (BPrint b) = do
 --------------------------------------------------------------------------------
 -- Case Block
 --------------------------------------------------------------------------------
-evalCase :: Case -> Evaluator ()
-evalCase (BoolBlock b s) = evalBExp b >>= \b' -> if b' then evaluate s else return ()
+-- evalCase :: Case -> Evaluator ()
+-- evalCase (BoolBlock b s) = evalBExp b >>= \b' -> if b' then evaluate d s else return ()
 
 --------------------------------------------------------------------------------
 -- Statements
@@ -110,22 +114,22 @@ evalCase (BoolBlock b s) = evalBExp b >>= \b' -> if b' then evaluate s else retu
 -- s = state = Environment = [(Identifier, Float)]
 -- m = monad = IO
 -- a = type  = () -- empty
-evaluate :: Stmt -> Evaluator ()
-evaluate (Seq [])     = return ()
-evaluate (Seq (x:xs)) = (evaluate x) >>= \_ -> evaluate (Seq xs)
-evaluate (Assign i e) = (evalAExp e) >>= \v -> get >>= (put . (add i v))
-evaluate (Print s)    = evalPExp s
-evaluate (If [])      = return ()
-evaluate (If ((BoolBlock b s):xs) )
+evaluate :: Device -> Stmt -> Evaluator ()
+evaluate d (Seq [])     = return ()
+evaluate d (Seq (x:xs)) = (evaluate d x) >>= \_ -> evaluate d (Seq xs)
+evaluate d (Assign i e) = (evalAExp e) >>= \v -> get >>= (put . (add i v))
+evaluate d (Print s)    = evalPExp s
+evaluate d (If [])      = return ()
+evaluate d (If ((BoolBlock b s):xs) )
                       =  evalBExp b >>= \b'
-                      -> if b' then evaluate s else evaluate (If xs)
-evaluate (While (BoolBlock b s))
+                      -> if b' then evaluate d s else evaluate d (If xs)
+evaluate d (While (BoolBlock b s))
                       =  evalBExp b >>= \b'
                       -> if b'
-                         then evaluate s >> evaluate (While (BoolBlock b s))
+                         then evaluate d s >> evaluate d (While (BoolBlock b s))
                          else return ()
-evaluate (Jef c)      = evalJefCommand c
-evaluate Skip         = return ()
+evaluate d (Jef c)      = evalJefCommand d c
+evaluate d Skip         = return ()
 
 
 
@@ -133,16 +137,15 @@ evaluate Skip         = return ()
 --------------------------------------------------------------------------------
 -- MBot Stuff
 --------------------------------------------------------------------------------
-evalJefCommand :: JefCommand -> Evaluator ()
-evalJefCommand (SetLight l r g b) =
+evalJefCommand :: Device -> JefCommand -> Evaluator ()
+evalJefCommand d (SetLight l r g b) =
      evalAExp l >>= \l'
   -> evalAExp r >>= \r'
   -> evalAExp g >>= \g'
   -> evalAExp b >>= \b'
-  -> lift $ do
-    d <- openMBot
-    sendCommand d $ setRGB (round l') (round r') (round g') (round b')
-    closeMBot d
+  -> lift $ do sendCommand d $ setRGB (round l') (round r') (round g') (round b')
+  -- -> return ()
+
 
     -- sendCommand d $ setRGB (round l') (round r') (round g') (round b')
     -- closeMBot d
