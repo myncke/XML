@@ -21,6 +21,7 @@ type Evaluator = StateT Environment IO
 -- Environment (Map of Strings and Floats)
 --------------------------------------------------------------------------------
 type Environment = [(Identifier, Float)]
+type EnvironmentT = (Environment, Device)
 
 find :: Identifier -> Environment -> Maybe Float
 find i [] = Nothing
