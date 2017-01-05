@@ -3,46 +3,61 @@ module ParseData where
 ------------------------------------------------------
 -- Literals
 ------------------------------------------------------
+-- Tags
+_TAG_START              = "<"
+_TAG_END                = "</"
+-- Chars
+_NEWLINE                = "<newline/>"
 -- Boolean
-literal_TRUE            = "true"
-literal_FALSE           = "false"
-literal_NOT             = ">"
-literal_AND             = "&&"
-literal_OR              = "||"
-literal_EQUALS          = "=="
-literal_LT              = ">"
-literal_GT              = ">"
+_TRUE                   = "true"
+_FALSE                  = "false"
+_BOOL                   = "bool>"
+_NOT                    = "not>"
+_AND                    = "and>"
+_OR                     = "or>"
+literal_EQUALS          = ""
+literal_LT              = ""
+literal_GT              = ""
+-- Print
+
 -- Numbers
-literal_PLUS            = '+'
-literal_MIN             = '-'
-literal_MUL             = '*'
-literal_DIV             = '/'
-literal_MOD             = '%'
--- MBot
-literal_MBOT            = '\128663'
-literal_LIGHT           = '\128161'
-literal_LIGHT_OUT       = '\128374'
-literal_GO              = '\128168'
-literal_ULTRASONIC      = '\128207'
-literal_FOLLOWER        = '\128301'
-literal_UP              = "<up>"
-literal_RIGHT           = "<right>"
-literal_DOWN            = "<down>"
-literal_LEFT            = "<left>"
-literal_STOP            = "<stop>"
-literal_BOTH_BLACK      = '\127761'
-literal_BOTH_WHITE      = '\127773'
-literal_WHITE_BLACK     = '\127767'
-literal_BLACK_WHITE     = '\127763'
+_VALUE                  = "value>"
+_FLOAT                  = "float>"
+_PLUS                   = "plus>"
+_MIN                    = "min>"
+_MUL                    = "mul>"
+_DIV                    = "div>"
+_MOD                    = ""
+-- Jef
+_JEF                    = "jef>"
+_LIGHT                  = "light>"
+literal_LIGHT_OUT       = ""
+literal_GO              = ""
+literal_ULTRASONIC      = ""
+literal_FOLLOWER        = ""
+literal_UP              = ""
+literal_RIGHT           = ""
+literal_DOWN            = ""
+literal_LEFT            = ""
+literal_STOP            = ""
+literal_BOTH_BLACK      = ""
+literal_BOTH_WHITE      = ""
+literal_WHITE_BLACK     = ""
+literal_BLACK_WHITE     = ""
 -- Statement Keywords
-literal_ASSIGN          = "<assign>"
-literal_COMMENT         = "<comment>"
-literal_IF              = "<if>"
-literal_ELSE            = "<else>"
-literal_WHILE           = "<while>"
-literal_END             = "<end>"
-literal_LPARENS         = "("
-literal_RPARENS         = ")"
+_VAR                    = "var>"
+_STRING                 = "string>"
+_ID                     = "id>"
+_ASSIGN                 = "assign>"
+_OPEN_COMMENT           = "<!--"
+_CLOSE_COMMENT          = "-->"
+_PRINT                  = "print>"
+_STATEMENT_END          = "end>"
+_IFELSE                 = "ifelse>"
+_CASE                   = "case>"
+_CONDITION              = "conditon>"
+_BLOCK                  = "block>"
+_WHILE                  = "while>"
 
 ------------------------------------------------------
 -- Structure
@@ -59,21 +74,41 @@ data AExp = Var Identifier
     deriving (Eq,Show)
 
 -- BOOLEAN EXPRESSIONS
-data BExp = BLit Bool
-  | Not BExp
+data BOp =  And | Or
     deriving (Show)
 
-data BBinOp = And | Or deriving (Show)
-data RBinOp = Greater | Less deriving (Show)
+data BExp = BLit Bool
+  | Not BExp
+  | BBool BOp BExp BExp
+  | ABool BOp AExp AExp
+    deriving (Show)
 
--- LINE EXPRESSIONS
+-- PRINT EXPRESSIONS
+data PExp = SeqPrint [PExp]
+  | APrint AExp
+  | BPrint BExp
+  | SPrint String
+  deriving (Show)
 
--- MBOT COMMANDS
+-- JEF COMMANDS
+type Light = Float
+
+data Direction = Forward | Backward | Left | Right deriving (Show)
+
+data JefCommand = SetLight AExp AExp AExp AExp
+  | Go Direction
+  | Stop
+    deriving (Show)
 
 -- STATEMENTS
+data Case = BoolBlock BExp Stmt
+    deriving (Show)
+
 data Stmt = Seq [Stmt]
-          | Assign Identifier AExp
-          | If BExp Stmt Stmt
-          | While BExp Stmt
-          | Skip
-            deriving (Show)
+  | Assign Identifier AExp
+  | Print PExp
+  | If [Case]
+  | While Case
+  | Jef JefCommand
+  | Skip
+    deriving (Show)
