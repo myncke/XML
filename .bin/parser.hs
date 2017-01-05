@@ -231,13 +231,19 @@ parsePExp =  a <|> s <|> b -- <|> q
 -- Jef Commands
 --------------------------------------------------------------------------------
 parseJExp :: Parser JefCommand
-parseJExp = ((\_ l r g b _ -> SetLight l r g b)
-         <$> open _LIGHT
-         <*> parseAExp
-         <*> parseAExp
-         <*> parseAExp
-         <*> parseAExp
-         <*> close _LIGHT)
+parseJExp =  open _LIGHT
+          >> parseAExp >>= \l
+          -> newlines
+          >> parseAExp >>= \r
+          -> newlines
+          >> parseAExp >>= \g
+          -> newlines
+          >> parseAExp >>= \b
+          -> close _LIGHT
+          >> return (SetLight l r g b)
+
+        --  <|> ((\_ d _ -> Go d)
+        --  <$> open _GO
 
 
   -- token (char literal_LIGHT) <*> integer <*> integer <*> integer <*> integer)
@@ -290,7 +296,7 @@ ifStmt    =  open _IFELSE
           >> return (If s)
 --
 caseStmt :: Parser Case
-caseStmt =  open _CASE
+caseStmt  =  open _CASE
           >> parseBExp >>= \b
           -> newlines
           >> blockStmt >>= \s
@@ -298,7 +304,7 @@ caseStmt =  open _CASE
           >> return (BoolBlock b s)
 
 blockStmt :: Parser Stmt
-blockStmt = open _BLOCK
+blockStmt =  open _BLOCK
           >> sequenceOfStmt >>= \s
           -> close _BLOCK
           >> return s

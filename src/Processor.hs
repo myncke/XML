@@ -3,6 +3,8 @@ module Processor where
 import Parser
 import ParseData
 import Utils
+import MBot
+import System.HIDAPI
 
 import Control.Monad.State
 
@@ -10,12 +12,8 @@ import Control.Monad.State
 -- Evaluator
 --------------------------------------------------------------------------------
 -- to do
-process :: Stmt -> IO()
-process program = do
-    putStrLn "Processing..."
-    runStateT (evaluate program) []
-    putStrLn "Done processing!"
-    return ()
+process :: Stmt -> IO ()
+process program = runStateT (evaluate program) [] >> return ()
 
 type Evaluator = StateT Environment IO
 
@@ -125,8 +123,8 @@ evaluate (While (BoolBlock b s))
                       -> if b'
                          then evaluate s >> evaluate (While (BoolBlock b s))
                          else return ()
+evaluate (Jef c)      = evalJefCommand c
 evaluate Skip         = return ()
-evaluate _            = return ()
 
 
 
@@ -134,3 +132,16 @@ evaluate _            = return ()
 --------------------------------------------------------------------------------
 -- MBot Stuff
 --------------------------------------------------------------------------------
+evalJefCommand :: JefCommand -> Evaluator ()
+evalJefCommand (SetLight l r g b) =
+     evalAExp l >>= \l'
+  -> evalAExp r >>= \r'
+  -> evalAExp g >>= \g'
+  -> evalAExp b >>= \b'
+  -> lift $ do
+    d <- openMBot
+    sendCommand d $ setRGB (round l') (round r') (round g') (round b')
+    closeMBot d
+
+    -- sendCommand d $ setRGB (round l') (round r') (round g') (round b')
+    -- closeMBot d

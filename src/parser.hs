@@ -231,13 +231,19 @@ parsePExp =  a <|> s <|> b -- <|> q
 -- Jef Commands
 --------------------------------------------------------------------------------
 parseJExp :: Parser JefCommand
-parseJExp = ((\_ l r g b _ -> SetLight l r g b)
-         <$> open _LIGHT
-         <*> parseAExp
-         <*> parseAExp
-         <*> parseAExp
-         <*> parseAExp
-         <*> close _LIGHT)
+parseJExp =  open _LIGHT
+          >> parseAExp >>= \l
+          -> newlines
+          >> parseAExp >>= \r
+          -> newlines
+          >> parseAExp >>= \g
+          -> newlines
+          >> parseAExp >>= \b
+          -> close _LIGHT
+          >> return (SetLight l r g b)
+
+        --  <|> ((\_ d _ -> Go d)
+        --  <$> open _GO
 
 
   -- token (char literal_LIGHT) <*> integer <*> integer <*> integer <*> integer)
