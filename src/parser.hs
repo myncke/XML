@@ -290,7 +290,7 @@ ifStmt    =  open _IFELSE
           >> return (If s)
 --
 caseStmt :: Parser Case
-caseStmt =  open _CASE
+caseStmt  =  open _CASE
           >> parseBExp >>= \b
           -> newlines
           >> blockStmt >>= \s
@@ -298,7 +298,7 @@ caseStmt =  open _CASE
           >> return (BoolBlock b s)
 
 blockStmt :: Parser Stmt
-blockStmt = open _BLOCK
+blockStmt =  open _BLOCK
           >> sequenceOfStmt >>= \s
           -> close _BLOCK
           >> return s
