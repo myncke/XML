@@ -9,7 +9,7 @@ import Control.Applicative
 
 import ParseData
 import Utils
-
+import Prelude hiding (Left, Right)
 --------------------------------------------------------------------------------
 -- Parser
 --------------------------------------------------------------------------------
@@ -122,58 +122,47 @@ parseInt = parseNat <|> parseNeg
 -- Arithmetic Expressions
 --------------------------------------------------------------------------------
 parseAExp :: Parser AExp
-parseAExp =  parseLit <|> parseAdd <|> parseMul <|> parseDev <|>
+parseAExp =  parseLit <|> parseAdd <|> parseMul <|> parseDiv <|>
              parseSub <|> parseVar <|> parseMod
   where
-    parseLit =  open _VALUE
-             >> parseInt >>= \n
-             -> close _VALUE
-             >> return (ALit n)
-    --
-    parseAdd =  open _PLUS
-             >> parseAExp >>= \d
-             -> newlines
-             >> parseAExp >>= \e
-             -> close _PLUS
-             >> return (Add d e)
-    --
-    parseMul =  open _MUL
-             >> parseAExp >>= \d
-             -> newlines
-             >> parseAExp >>= \e
-             -> close _MUL
-             >> return (Mul d e)
-    --
-    parseDev =  open _DIV
-             >> parseAExp >>= \d
-             -> newlines
-             >> parseAExp >>= \e
-             -> close _DIV
-             >> return (Div d e)
-    --
-    parseSub =  open _MIN
-             >> parseAExp >>= \d
-             -> newlines
-             >> parseAExp >>= \e
-             -> close _MIN
-             >> return (Min d e)
-    --
-    parseMod =  open _MOD
-             >> parseAExp >>= \d
-             -> newlines
-             >> parseAExp >>= \e
-             -> close _MOD
-             >> return (Mod d e)
+    parseAdd = parseAExp' _PLUS >>= \(d, e) -> return (Add d e)
+    parseMul = parseAExp' _MUL  >>= \(d, e) -> return (Mul d e)
+    parseDiv = parseAExp' _DIV  >>= \(d, e) -> return (Div d e)
+    parseSub = parseAExp' _MIN  >>= \(d, e) -> return (Min d e)
+    parseMod = parseAExp' _MOD  >>= \(d, e) -> return (Mod d e)
     --
     parseVar =  open _VAR
              >> identifier >>= \i
              -> close _VAR
              >> return (Var i)
+    --
+    parseLit =  open _VALUE
+             >> parseInt >>= \n
+             -> close _VALUE
+             >> return (ALit n)
+
+parse2AExp :: Parser (AExp, AExp)
+parse2AExp =  parseAExp >>= \d
+           -> newlines
+           >> parseAExp >>= \e
+           -> return (d, e)
+
+parseAExp' :: String -> Parser (AExp, AExp)
+parseAExp' s =  open s
+             >> parse2AExp >>= \(d, e)
+             -> close s
+             >> return (d, e)
 
 
 --------------------------------------------------------------------------------
 -- Boolean Expressions
 --------------------------------------------------------------------------------
+parseBExp :: Parser BExp
+parseBExp =  parseLit <|> parseNot <|> parseBoolOP
+  where
+    parseLit  = parseBool >>= \b -> return (BLit b)
+    parseNot  = open _NOT >> parseBExp >>= \b -> close _NOT >> return (Not b)
+
 parseBool :: Parser Bool
 parseBool = true <|> false
   where
@@ -183,14 +172,14 @@ parseBool = true <|> false
 parseBoolOP :: Parser BExp
 parseBoolOP = parseAnd <|> parseOr <|> parseEqualsA
   where
-    parseAnd     = open _AND
+    parseAnd     =  open _AND
                  >> parseBExp >>= \p
                  -> newlines
                  >> parseBExp >>= \q
                  -> close _AND
                  >> return (BBool And p q)
     --
-    parseOr      = open _OR
+    parseOr      =  open _OR
                  >> parseBExp >>= \p
                  -> newlines
                  >> parseBExp >>= \q
@@ -198,17 +187,9 @@ parseBoolOP = parseAnd <|> parseOr <|> parseEqualsA
                  >> return (BBool Or p q)
     --
     parseEqualsA =  open _EQUALS
-                 >> parseAExp >>= \d
-                 -> newlines
-                 >> parseAExp >>= \e
+                 >> parse2AExp >>= \(d, e)
                  -> close _EQUALS
                  >> return (ABool Equals d e)
-
-parseBExp :: Parser BExp
-parseBExp =  parseLit <|> parseNot <|> parseBoolOP
-  where
-    parseLit  = parseBool >>= \b -> return (BLit b)
-    parseNot  = open _NOT >> parseBExp >>= \b -> close _NOT >> return (Not b)
 
 --------------------------------------------------------------------------------
 -- Print Expressions
@@ -224,21 +205,34 @@ parsePExp =  a <|> s <|> b -- <|> q
       close _STRING
       return (SPrint i )
 
-
 --------------------------------------------------------------------------------
 -- Jef Commands
 --------------------------------------------------------------------------------
 parseJExp :: Parser JefCommand
-parseJExp =  open _LIGHT
-          >> parseAExp >>= \l
+parseJExp = light <|> go
+  where
+    light =  open _LIGHT
+          >> parse2AExp >>= \(l, r)
           -> newlines
-          >> parseAExp >>= \r
-          -> newlines
-          >> parseAExp >>= \g
-          -> newlines
-          >> parseAExp >>= \b
+          >> parse2AExp >>= \(g, b)
           -> close _LIGHT
           >> return (SetLight l r g b)
+    --
+    go    = open _GO
+          >> parseDirection >>= \d
+          -> close _GO
+          >> return (Go d)
+
+parseDirection :: Parser Direction
+parseDirection = forward <|> backward <|> left <|> right
+  where
+    forward  = tag _FORWARD  >> return (Forward)
+    backward = tag _BACKWARD >> return (Backward)
+    left     = tag _LEFT     >> return (Left)
+    right    = tag _RIGHT    >> return (Right)
+
+          -- (\_ d -> Go d) <$> token (char literal_GO) <*> direction)
+
 
         --  <|> ((\_ d _ -> Go d)
         --  <$> open _GO
@@ -314,12 +308,13 @@ whileStmt   =  open _WHILE
 
 -- COMMENT STATEMENT
 commentStmt :: Parser Stmt
-commentStmt =  tag _OPEN_COMMENT
-            >> newlines
-            >> many $ satisfy (/= '-') -- Todo: match "-->"
-            >> newlines
-            >> tag  _CLOSE_COMMENT
-            >> return Skip
+commentStmt =  do
+  tag _OPEN_COMMENT
+  many $ token '\n'
+  many $ satisfy (/= '-') -- Todo: match "-->"
+  many $ token '\n'
+  tag  _CLOSE_COMMENT
+  return Skip
 
 --------------------------------------------------------------------------------
 -- Magic
@@ -337,8 +332,7 @@ sepBy :: Parser a -> Parser s -> Parser [a]
 sepBy p s = liftA2 (:) p ((s *> sepBy1 p s) <|> pure []) <|> pure []
 
 sepBy1 :: Parser a -> Parser s -> Parser [a]
-sepBy1 p s = scan where
-   scan = liftA2 (:) p $ (s *> scan) <|> pure []
+sepBy1 p s = scan where scan = liftA2 (:) p $ (s *> scan) <|> pure []
 
 sequenceOfStmt :: Parser Stmt
 sequenceOfStmt = Seq <$> sepBy1 statement (whitespace *> some(token '\n') <* whitespace)
