@@ -22,18 +22,18 @@ process program =
 type Evaluator = StateT Environment IO
 
 --------------------------------------------------------------------------------
--- Environment (Map of Strings and Floats)
+-- Environment (Map of Strings and Ints)
 --------------------------------------------------------------------------------
-type Environment = [(Identifier, Float)]
+type Environment = [(Identifier, Int)]
 type EnvironmentT = (Environment, Device) -- todo lenses
 
-find :: Identifier -> Environment -> Maybe Float
+find :: Identifier -> Environment -> Maybe Int
 find i [] = Nothing
 find i ((k,v):e)
   | i == k = Just v
   | otherwise = lookup i e
 
-add :: Identifier -> Float -> Environment -> Environment
+add :: Identifier -> Int -> Environment -> Environment
 add i f [] = [(i,f)]
 add i f ((k,v):e)
   | i == k = (k,f):e
@@ -49,12 +49,13 @@ remove i ((k,v):e)
 -- Arithmetic Expressions
 --------------------------------------------------------------------------------
 
-evalAExp :: AExp -> Evaluator Float
+evalAExp :: AExp -> Evaluator Int
 evalAExp (ALit n)  = return n
-evalAExp (Add e f) = evalAExp e >>= \ a -> evalAExp f >>= \ b -> return (a + b)
-evalAExp (Mul e f) = evalAExp e >>= \ a -> evalAExp f >>= \ b -> return (a * b)
-evalAExp (Div e f) = evalAExp e >>= \ a -> evalAExp f >>= \ b -> return (a / b)
-evalAExp (Min e f) = evalAExp e >>= \ a -> evalAExp f >>= \ b -> return (a - b)
+evalAExp (Add e f) = evalAExp e >>= \a -> evalAExp f >>= \b -> return (a + b)
+evalAExp (Mul e f) = evalAExp e >>= \a -> evalAExp f >>= \b -> return (a * b)
+evalAExp (Div e f) = evalAExp e >>= \a -> evalAExp f >>= \b -> return (div a b)
+evalAExp (Min e f) = evalAExp e >>= \a -> evalAExp f >>= \b -> return (a - b)
+evalAExp (Mod e f) = evalAExp e >>= \a -> evalAExp f >>= \b -> return (mod a b)
 evalAExp (Var  n)  = get >>= \env -> case find n env of
   Just b -> return b
   Nothing -> fail "Error: couldn't find variable"
@@ -66,16 +67,23 @@ evalAExp (Var  n)  = get >>= \env -> case find n env of
 evalBExp :: BExp -> Evaluator Bool
 evalBExp (BLit b) = return b
 evalBExp (Not n)  = evalBExp n >>= \ b -> return (not b)
-evalBExp (ABool o p q) = undefined
+evalBExp (ABool o d e) = do
+  o' <- evalABoolOp  o
+  d' <- evalAExp d
+  e' <- evalAExp e
+  return (o' d' e')
 evalBExp (BBool o p q) = do
   p' <- evalBExp p
   q' <- evalBExp q
-  o' <- evalBOp  o
+  o' <- evalBBoolOp  o
   return (o' p' q')
 
-evalBOp :: BOp ->  Evaluator (Bool -> Bool -> Bool)
-evalBOp And     = return (&&)
-evalBOp Or      = return (||)
+evalBBoolOp :: BOp ->  Evaluator (Bool -> Bool -> Bool)
+evalBBoolOp And     = return (&&)
+evalBBoolOp Or      = return (||)
+
+evalABoolOp :: BOp ->  Evaluator (Int -> Int -> Bool)
+evalABoolOp Equals  = return (==)
 -- evalBOp Greater = (>)
 -- evalBOp Less    = (<)
 
@@ -111,7 +119,7 @@ evalPExp (BPrint b) = do
 --------------------------------------------------------------------------------
 -- evaluate :: Stmt -> StateT Environment IO ()
 --  where StateT s m a:
--- s = state = Environment = [(Identifier, Float)]
+-- s = state = Environment = [(Identifier, Int)]
 -- m = monad = IO
 -- a = type  = () -- empty
 evaluate :: Device -> Stmt -> Evaluator ()
@@ -143,7 +151,7 @@ evalJefCommand d (SetLight l r g b) =
   -> evalAExp r >>= \r'
   -> evalAExp g >>= \g'
   -> evalAExp b >>= \b'
-  -> lift $ do sendCommand d $ setRGB (round l') (round r') (round g') (round b')
+  -> lift $ do sendCommand d $ setRGB l' r' g' b'
   -- -> return ()
 
 

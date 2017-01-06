@@ -1,0 +1,74 @@
+<!--
+================================================================================
+   ARITHMETIC EXAMPLE
+================================================================================
+-->
+
+<assign>
+    <id> a </id>
+    <value> 5</value>
+</assign>
+
+<assign>
+    <id> a </id>
+    <plus>
+        <value>5</value>
+        <value>5</value>
+    </plus>
+</assign>
+
+<assign>
+    <id> a </id>
+    <min>
+        <var> a </var>
+        <value>5</value>
+    </min>
+</assign>
+
+<assign>
+    <id> b </id>
+    <div>
+        <value>5</value>
+        <value>5</value>
+    </div>
+</assign>
+
+<assign>
+    <id> c </id>
+    <mul>
+        <value>5</value>
+        <value>5</value>
+    </mul>
+</assign>
+
+<print>
+    <string> asds
+    </string>
+</print>
+
+<print>
+    <string>
+      ayy lmao!!
+    </string>
+</print>
+
+<print>
+    <var>
+      a
+    </var>
+</print>
+
+<print>
+    <plus>
+        <value>5</value>
+        <value>5 </value>
+    </plus>
+</print>
+
+<print>
+    <var> b </var>
+</print>
+
+<print>
+    <var> c </var>
+</print>

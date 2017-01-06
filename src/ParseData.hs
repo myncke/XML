@@ -15,7 +15,7 @@ _BOOL                   = "bool>"
 _NOT                    = "not>"
 _AND                    = "and>"
 _OR                     = "or>"
-literal_EQUALS          = ""
+_EQUALS                 = "equals>"
 literal_LT              = ""
 literal_GT              = ""
 -- Print
@@ -66,7 +66,7 @@ type Identifier = String
 
 -- ARITHMETIC EXPRESSIONS
 data AExp = Var Identifier
-  | ALit Float
+  | ALit Int
   | Add AExp AExp
   | Mul AExp AExp
   | Div AExp AExp
@@ -75,7 +75,7 @@ data AExp = Var Identifier
     deriving (Eq,Show)
 
 -- BOOLEAN EXPRESSIONS
-data BOp =  And | Or
+data BOp =  And | Or | Equals
     deriving (Show)
 
 data BExp = BLit Bool
@@ -92,8 +92,6 @@ data PExp = SeqPrint [PExp]
   deriving (Show)
 
 -- JEF COMMANDS
-type Light = Float
-
 data Direction = Forward | Backward | Left | Right deriving (Show)
 
 data JefCommand = SetLight AExp AExp AExp AExp

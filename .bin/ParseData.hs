@@ -15,7 +15,7 @@ _BOOL                   = "bool>"
 _NOT                    = "not>"
 _AND                    = "and>"
 _OR                     = "or>"
-literal_EQUALS          = ""
+_EQUALS                 = "equals>"
 literal_LT              = ""
 literal_GT              = ""
 -- Print
@@ -27,7 +27,7 @@ _PLUS                   = "plus>"
 _MIN                    = "min>"
 _MUL                    = "mul>"
 _DIV                    = "div>"
-_MOD                    = ""
+_MOD                    = "mod>"
 -- Jef
 _JEF                    = "jef>"
 _LIGHT                  = "light>"
@@ -66,15 +66,16 @@ type Identifier = String
 
 -- ARITHMETIC EXPRESSIONS
 data AExp = Var Identifier
-  | ALit Float
+  | ALit Int
   | Add AExp AExp
   | Mul AExp AExp
   | Div AExp AExp
   | Min AExp AExp
+  | Mod AExp AExp
     deriving (Eq,Show)
 
 -- BOOLEAN EXPRESSIONS
-data BOp =  And | Or
+data BOp =  And | Or | Equals
     deriving (Show)
 
 data BExp = BLit Bool
@@ -91,8 +92,6 @@ data PExp = SeqPrint [PExp]
   deriving (Show)
 
 -- JEF COMMANDS
-type Light = Float
-
 data Direction = Forward | Backward | Left | Right deriving (Show)
 
 data JefCommand = SetLight AExp AExp AExp AExp

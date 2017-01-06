@@ -1,0 +1,79 @@
+<!--
+================================================================================
+   POLITIE PROGRAMMA
+================================================================================
+-->
+
+<assign>
+    <id> i </id>
+    <value> 0 </value>
+</assign>
+
+<while>
+    <case>
+        <bool>
+          true
+        </bool>
+        <block>
+            <ifelse>
+                <case>
+                    <equals>
+                      <mod>
+                        <var> i </var>
+                        <value> 2 </value>
+                      </mod>
+                      <value> 1 </value>
+                    </equals>
+                    <block>
+                      <jef>
+                          <light>
+                              <value> 1 </value>
+                              <value> 100 </value>
+                              <value> 0 </value>
+                              <value> 0 </value>
+                          </light>
+                      </jef>
+                      <jef>
+                          <light>
+                              <value> 2 </value>
+                              <value> 0 </value>
+                              <value> 0 </value>
+                              <value> 100 </value>
+                          </light>
+                      </jef>
+                    </block>
+                </case>
+                <case>
+                    <bool>
+                      true
+                    </bool>
+                    <block>
+                        <jef>
+                            <light>
+                                <value> 1 </value>
+                                <value> 0 </value>
+                                <value> 0 </value>
+                                <value> 100 </value>
+                            </light>
+                        </jef>
+                        <jef>
+                            <light>
+                                <value> 2 </value>
+                                <value> 100 </value>
+                                <value> 0 </value>
+                                <value> 0 </value>
+                            </light>
+                        </jef>
+                    </block>
+                </case>
+            </ifelse>
+            <assign>
+                <id> i </id>
+                <plus>
+                  <var> i </var>
+                  <value> 1 </value>
+                </plus>
+            </assign>
+        </block>
+    </case>
+</while>

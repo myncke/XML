@@ -1,0 +1,28 @@
+<!--
+================================================================================
+   WHILE EXAMPLE
+================================================================================
+ -->
+
+<print>
+  <string>
+WHILE -> BOOL -> STATMENT
+  </string>
+</print>
+
+<while>
+  <case>
+      <not>
+        <bool>
+          false
+        </bool>
+      </not>
+       <block>
+         <print>
+           <string>
+YES!
+           </string>
+         </print>
+       </block>
+  </case>
+</while>
