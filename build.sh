@@ -11,9 +11,3 @@ echo "==========================================================================
   ghc Main.hs -fno-warn-tabs -XGeneralizedNewtypeDeriving -framework IOKit -framework CoreFoundation
   cd ..
   cp .bin/Main RUN
-
-
-echo "==============================================================================="
-echo -e " Test: WHILE.XML"
-echo "==============================================================================="
-  ./RUN  Examples/FOLLOW_LINE.XML

@@ -1,0 +1,74 @@
+<!--
+================================================================================
+     AVOID PROGRAMMA
+================================================================================
+-->
+
+<while>
+    <case>
+      <bool>
+          true
+      </bool>
+        <block>
+          <ifelse>
+              <case>
+                <lesser>
+                    <jef>
+                        sonic
+                    </jef>
+                    <value> 10 </value>
+                </lesser>
+                  <block>
+                    <jef>
+                        <go>
+                            backward
+                        </go>
+                    </jef>
+                    <jef>
+                        <go>
+                            backward
+                        </go>
+                    </jef>
+                    <jef>
+                        <go>
+                            backward
+                        </go>
+                    </jef>
+                    <jef>
+                        <go>
+                            backward
+                        </go>
+                    </jef>
+                    <jef>
+                        <go>
+                            right
+                        </go>
+                    </jef>
+                    <jef>
+                        <go>
+                            right
+                        </go>
+                    </jef>
+                    <jef>
+                        <go>
+                            right
+                        </go>
+                    </jef>
+                  </block>
+              </case>
+              <case>
+                  <bool>
+                      true
+                  </bool>
+                  <block>
+                      <jef>
+                          <go>
+                              forward
+                          </go>
+                      </jef>
+                  </block>
+              </case>
+          </ifelse>
+        </block>
+    </case>
+</while>

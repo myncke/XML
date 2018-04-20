@@ -1,13 +1,12 @@
 module ParseData where
 
+import MBot
 ------------------------------------------------------
 -- Literals
 ------------------------------------------------------
 -- Tags
 _TAG_START              = "<"
 _TAG_END                = "</"
--- Chars
-_NEWLINE                = "<newline/>"
 -- Boolean
 _TRUE                   = "true"
 _FALSE                  = "false"
@@ -16,9 +15,8 @@ _NOT                    = "not>"
 _AND                    = "and>"
 _OR                     = "or>"
 _EQUALS                 = "equals>"
-literal_LT              = ""
-literal_GT              = ""
--- Print
+_LT                     = "lesser>"
+_GT                     = "greater>"
 
 -- Numbers
 _VALUE                  = "value>"
@@ -31,19 +29,16 @@ _MOD                    = "mod>"
 -- Jef
 _JEF                    = "jef>"
 _LIGHT                  = "light>"
--- literal_LIGHT_OUT       = ""
 _GO                     = "go>"
-literal_ULTRASONIC      = ""
-_FOLLOW                 = "follow>"
+_ULTRASONIC             = "sonic"
+_FOLLOW                 = "follow"
 _FORWARD                = "forward"
 _RIGHT                  = "right"
 _BACKWARD               = "backward"
 _LEFT                   = "left"
-literal_STOP            = "stop"
-literal_BOTH_BLACK      = ""
-literal_BOTH_WHITE      = ""
-literal_WHITE_BLACK     = ""
-literal_BLACK_WHITE     = ""
+_STOP                   = "<stop/>"
+_BOTH_BLACK             = "black"
+_BOTH_WHITE             = "white"
 -- Statement Keywords
 _VAR                    = "var>"
 _STRING                 = "string>"
@@ -72,16 +67,18 @@ data AExp = Var Identifier
   | Div AExp AExp
   | Min AExp AExp
   | Mod AExp AExp
+  | JefSensor
     deriving (Eq,Show)
 
 -- BOOLEAN EXPRESSIONS
-data BOp =  And | Or | Equals
+data BOp =  And | Or | Equals | Lesser | Greater
     deriving (Show)
 
 data BExp = BLit Bool
   | Not BExp
   | BBool BOp BExp BExp
   | ABool BOp AExp AExp
+  | BLine BOp JefLine JefLine
     deriving (Show)
 
 -- PRINT EXPRESSIONS
@@ -93,6 +90,8 @@ data PExp = SeqPrint [PExp]
 
 -- JEF COMMANDS
 data Direction = Forward | Backward | Left | Right deriving (Show)
+data JefLine = JLine Line | Follow deriving (Show)
+
 
 data JefCommand = SetLight AExp AExp AExp AExp
   | Go Direction

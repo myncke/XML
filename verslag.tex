@@ -1,0 +1,494 @@
+\documentclass[]{article}
+\usepackage{listings}
+\usepackage{color}
+\definecolor{gray}{rgb}{0.9,0.9,.9}
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\lstset{
+	backgroundcolor=\color{gray},
+	 basicstyle=\footnotesize,
+	framesep=10pt,
+	xleftmargin=5pt,
+	xrightmargin=5pt,
+	 commentstyle=\color{mygreen},    % comment style
+	 keywordstyle=\color{blue},
+	frame=lrtb,
+}
+\lstdefinestyle{code}{
+   language=XML,
+    basicstyle=\footnotesize,
+    numbers=left,
+    xleftmargin=-30pt,
+    xrightmargin=-30pt,
+    framexleftmargin=1.6em,
+    stepnumber=1,
+    showstringspaces=false,
+    tabsize=2,
+    breaklines=true,
+    breakatwhitespace=true,
+}
+
+\begin{document}
+
+\title{Project Functioneel programmeren}
+\author{Mats Myncke}
+%\date{}
+\maketitle
+
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 		INLEINDING 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{Inleiding}
+Ik geloof dat ik er in geslaagd ben om de verwachte functionaliteit te implementeren. Helaas wel met hier en daar nog enkele bugs. De taal is gebaseerd op XML en heeft volgende functionaliteit:
+
+\begin{enumerate}
+\item Getallen en Booleans
+\item Arithmetic en Boolean expressions
+\item Variabelen bijhouden
+\item  While loop
+\item If Else
+\item MBot (Jef) commando's
+	\begin{enumerate}
+	\item Leds
+	\item Motor commando's
+	\item Sensor ~
+	\end{enumerate}
+\end{enumerate}
+
+Ook niet  onbelangrijk om te weten is de structuur van mijn project en die is als volgt. 
+\begin{itemize}
+\item /build.sh
+\item /Examples
+	\begin{itemize}
+	\item /AVOID.XML
+	\item /FOLLOW\_LINE.XML
+	\item /POLICE.XML
+	\end{itemize}
+\item /src
+	\begin{itemize}
+	\item /Main.hs
+	\item /Parser.hs
+	\item /Processor.hs
+	\item /ParseData
+	\item /Utils.hs
+	\end{itemize}
+\end{itemize}
+
+\textbf{build.sh} is een script dat alles in \textbf{/src} compileert tot een uitvoerbaar programma (/RUN). Het is bedoeld om alles proper te houden. Met het resultaat van \textbf{build.sh}  kan je code parsen en evalueren door het een file mee te geven. 
+\begin{lstlisting}
+$ ./build.sh
+$ RUN Examples/POPO.XML
+\end{lstlisting}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%		SYNTAX
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{Syntax}
+Een klein detail, ik heb mijn robot Jef genoemd.  Ik heb dus voor 
+
+\subsection{Aritmetic Expressions}
+
+\begin{lstlisting}
+Identifier ::= String
+
+AExp ::= <value> Int </value>
+    | <var> Identifier </var>
+    | <add> AExp AExp </add>
+    | <mul> AExp AExp </mul>
+    | <div> AExp AExp </div>
+    | <min> AExp AExp </min
+    | <mod> AExp AExp </mod>
+    | <jef> sonic </jef>
+\end{lstlisting}
+
+\-
+
+\subsection{Boolean Expressions}
+\begin{lstlisting}
+BOp ::= <and>
+    | <or>
+    | <equals>
+    | <greater>
+    | <lesser>
+
+ClosingBOp ::= </and>
+    | </or>
+    | </equals>
+    | </greater>
+    | </lesser>
+
+BExp ::= <bool> Bool </bool>
+    | <not> BExp </not>
+    | BOp BExp BExp ClosingBOp
+    | BOp AExp AExp ClosingBOp
+    | BOp JefLine JefLine ClosingBOp
+\end{lstlisting}
+
+\newpage
+
+\subsection{Jef Commands}
+
+\begin{lstlisting}
+Direction ::= forward
+    | backward
+    | left
+    | right
+	
+JefLine ::= Direction
+    | <jef> follow </jef>
+
+
+JefCommand ::= <light> AExp AExp AExp AExp </light> 
+    | <go> Direction </go>
+    | stop
+\end{lstlisting}
+
+\-
+
+\subsection{Statements}
+
+\begin{lstlisting} 
+PExp ::= [PExp]
+    | AExp
+    | BExp
+    | String
+
+Case ::= <case> BExp Stmt </case>
+
+Stmt ::= <block> [Stmt] </block>
+    | <assign> <id> Identifier </id> AExp </assign>
+    | <print> PExp </print>
+    | <ifelse> [Case] </ifelse>
+    | <while> Case </while>
+    | <jef> JefCommand </jef>
+    | <!-- commentaar -->
+
+\end{lstlisting}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%		SEMANTIEK
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{Semantiek}
+\subsection{Assignment}
+Een assign statement gaat een variable gaan bijhouden in de State (Environment).  Dit bekom je door een id-tag en een AExp te wrappen in een assign-tag.
+\begin{lstlisting}
+<assign>
+    <id> i </id>
+    <value> 0 </value>
+</assign>
+\end{lstlisting}
+
+\subsection{Print Statement}
+Dit is vooral om het debuggen gemakkelijker te maken. Alles wat tussen print-tags staat wordt geevalueerd en uitgeprint naar de console. 
+
+\begin{lstlisting}
+<print>
+    <string>
+	HELLO WORLD!
+    </string>
+</print>
+\end{lstlisting}
+
+\subsection{Ifelse Statment}
+De ifelse werkt iets anders dan verwacht. je kan meerdere "case blokken" na elkaar zetten in een ifelse blok. Enkel de eerste case die true is, wordt uitgevoerd. Een case blok bestaat uit een BExp en een Stmt blok gewrapt in een case-tag.
+
+\begin{lstlisting}
+<ifelse>
+    <case>
+        <not>
+            <bool>
+              true
+            </bool>
+        </not>
+        <block>
+	  ...
+        </block>
+    </case>
+    <case>
+        <bool>
+           true
+        </bool>
+        <block>
+	  ...
+        </block>
+    </case>
+</ifelse>
+
+\end{lstlisting}
+
+
+\subsection{While loop}
+Een while wrapper bevat maar 1 case blok en blijft de case evalueren tot de BExp false is.
+\begin{lstlisting}
+<while>
+    <case>
+       <bool>
+          true
+       </bool>
+       <block>
+	 ...
+       </block>
+    </case>
+</while>
+\end{lstlisting}
+
+\subsection{Jef Commands}
+Voor Jef zijn er een aantal commando's mogelijk.
+
+\subsubsection{Lichts}
+
+\begin{lstlisting}
+<jef>
+    <light>
+        <value> 1 </value>
+        <value> 1 </value>
+        <value> 1 </value>
+        <value> 1 </value>
+    </light>
+</jef>
+\end{lstlisting}
+
+\subsubsection{Go}
+
+\begin{lstlisting}
+<jef>
+    <go>
+        forward
+    </go>
+</jef>
+\end{lstlisting}
+
+\subsubsection{Follow}
+
+\begin{lstlisting}
+<jef>
+    follow
+</jef>
+\end{lstlisting}
+
+\subsubsection{Sensor}
+
+\begin{lstlisting}
+<jef>
+    sonic
+</jef>
+\end{lstlisting}
+
+\-
+
+\subsection{Comments}
+Elk Programma moet beginnen met een commentaar lijn om de programmeur aan te sporen om hun code te documenteren. Commentaar in de code zelf kan soms fouten veroorzaken. Alles tussen $<!--$ en $ -->$ is commentaar.
+
+\-
+
+\begin{lstlisting}
+<!--
+============================================================
+     COMMENT
+============================================================
+-->
+\end{lstlisting}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 		EXAMPLES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+
+\section{Voorbeeld programma's}
+ \subsection{POLICE.XML}
+Eerst zet ik een variable i gelijk aan 0. Dan start ik een oneindige while loop. In die while loop doe ik een ifelse die checkt of i \% 2 gelijk is aan 1. Als dat zo is zet ik de lichten op een bepaald kleur en na het ifelse blok incrementeer ik de variable i. De volgende iteratie zal het andere blok in de ifelse uitgevoerd worden. Die dan weer de lichten aanpast.
+
+\-
+
+pseudocode:
+\begin{lstlisting}[language=XML]
+<assign>
+	<id> i
+	<value> 0
+<while>
+	true
+	<ifelse>
+	<case>
+		<mod> <var> i <value> 2
+		<lights> 
+	<case>
+		true
+		<lights>
+\end{lstlisting}
+
+
+ \subsection{FOLLOW\_LINE.XML}
+Dit programma start met een oneindige while loop. Dan volgen er een hoop geneste ifelse statements die telkens controleren met een Jef follow statement of de robot nog op het juiste pad. Als dit zo is rijdt hij rechtdoor, anders wordt hij in de juiste richting bijgestuurd.
+
+\begin{lstlisting}[language=XML]
+<while>
+	true
+	<ifelse>
+		<case>
+		<jef>
+	    		follow -> true
+		<block>
+			<go> forward
+	<case>
+		...
+\end{lstlisting}
+
+ \newpage
+ \subsection{AVOID.XML}
+Weer wordt er gestart met een oneindige loop. In de ifelse case die dan volgt wordt er gecontroleerd of de sensor waarde al dan niet kleiner is dan 10. Als dit zo is rijdt Jef achteruit en naar rechts. Als het groter is dan 10 gaat hij rechtdoor.
+\begin{lstlisting}[language=XML]
+<while>
+	true
+	<ifelse>
+		<case>
+		<lesser>
+			<jef>
+	    			sonic
+			<value> 10
+		<block>
+			<go> backward, right
+		<case>
+		true
+		<block>
+			<go> forward
+\end{lstlisting}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%		IMPLEMENTATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Implementatie}
+\subsection{Main.hs}
+Het programma begint in \textbf{Main.sh} met het inlezen van een file dat is meegegeven bij het uitvoeren als argument. Als er een file is meegegeven gaat dit document geparst worden door de parse functie in de Parser module. Deze parse functie geeft een IO (Maybe Stmt) terug. Als er succesvol geparst is wordt dit statement (een data type in  \textbf{ParseData.hs}) verwerkt door  de process functie in de Processor module. Als dit niet het geval is dit het einde van het programma. 
+
+\subsection{Parser.hs}
+
+Zoals hier boven vermeld wordt in deze module een String verwerkt tot een IO (Maybe Stmt). De functie parse ontvangt een String (het programma) en gaat die met behulp van een Stmt Parser omzetten tot een Just Stmt. (terug te vinden op regels 22 - 31) We starten met er van uit te gaan dat elk programma een sequentie van statements is dat op zichzelf ook een Stmt is. Hiervoor hebben we een Parser nodig die Stmt's kan verwerken, Staat kan bijhouden en een Just terug geeft indien alles geslaagd is. 
+
+De type declaratie van de parser is geimplementeerd als volgt. 
+
+\begin{lstlisting}[language=Haskell]
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+newtype Parser a = Parser { runParser :: StateT String Maybe a }
+  deriving (Functor, Monad, Applicative, Alternative)
+\end{lstlisting}
+
+\textbf{Parser a} is eigenlijk een wrapper voor de transformer monad \textbf{StateT}. De \textbf{StateT} krijgt altijd een \textbf{String} en een \textbf{Maybe} monad met type \textbf{a} mee. Hier mee kunnen we verschillende parsers maken zoals bv. een AExp parser.
+
+\-
+
+Zoals je ook kan zien maak ik uitgebreid gebruik van deriving. Ik had eerst mijn \textbf{Functor}, \textbf{Alternative}, ... zelf geschreven maar met gebruik te maken van het niet zo veilige \textbf{GeneralizedNewtypeDeriving} was dit niet meer nodig. 
+
+\-
+
+Een parser maken van een nieuw type \textbf{a} wordt vrij gemakkelijk. Stel dat wel een \textbf{Jef statment} willen parsen kan dit op volgende manier.
+
+\begin{lstlisting}[language=Haskell]
+jefStmt :: Parser Stmt
+jefStmt     =  open _JEF
+            >> parseJExp >>= \c
+            -> close _JEF
+            >> return (Jef c)
+\end{lstlisting}
+
+De functie's \textbf{open} en \textbf{close} zijn ook parsers en worden gebind op een \textbf{JefCommand} parser.
+de \textbf{JefCommand} parser geeft, afhankelijk of hij iets heeft kunnen parsen, een resultaat terug.
+
+
+\begin{lstlisting}[language=Haskell]
+parseJExp :: Parser JefCommand
+parseJExp = go <|>  ...
+  where
+    go    =  open _GO
+          >> parseDirection >>= \d
+          -> close _GO
+          >> return (Go d)
+
+parseDirection :: Parser Direction
+parseDirection = forward <|> backward <|> left <|> right
+  where
+    forward  = tag _FORWARD  >> return (Forward)
+    backward = tag _BACKWARD >> return (Backward)
+    left     = tag _LEFT     >> return (Left)
+    right    = tag _RIGHT    >> return (Right)
+\end{lstlisting}
+
+De \textbf{JefCommand} parser maakt zelf dan weer gebruik van een andere parser. In dit geval van een \textbf{Direction} parser. 
+
+Het resultaat van deze parser wordt dan toegevoegd aan de State en de rest van het programma word verder geparst tot er niets meer overblijft of tot er iets mis loopt.
+
+\-
+\newpage
+\subsection{ParseData.hs}
+Hier kan je alle Litteral Strings (tags en keywords) terug vinden als ook de structuur van mijn gebruikte data types. 
+Voor deze data types worden er parsers gemaakt in \textbf{Parser.hs} zodat een onverstaanbare String omgevormd wordt in een verstaanbaar data type. 
+
+\subsection{Processor.hs}
+In \textbf{Processor.hs} wordt de geparste data (Stmt) overlopen en gevalueerd. De process functie (terug te vinden op regel 17) krijgt en Stmt binnen en zet die om naar een lege IO. Eerst wordt er wel een verbinding opgezet met Jef die na evaluatie ook weer afgesloten wordt. 
+Voor alle mogelijke Statments en Expressies zijn de nodige evaluators geschreven. Het statement dat process binnen heeft gekregen wordt gematched met de juiste evaluator en die handelt alles verder af. Deze evaluator roept dan ook andere evaluatoren op moest het nodig zijn. 
+
+\-
+
+Hier is het weer nuttig om een State bij te houden. In dit geval omdat we een Environment (assign statements) willen bijhouden en dit mooier is om met een StateT te werken dan een globale variabele 
+
+\begin{lstlisting}[language=Haskell]
+type Evaluator = StateT Environment IO
+type Environment = [(Identifier, Int)]
+\end{lstlisting}
+
+De State hier is dus de Environment, een lijst van Identifiers en Ints. 
+
+Dit wil dus zeggen dat alle evaluators de huidige staat moeten terug geven.
+
+\subsection{Utils.hs}
+Hier wonen maar 2 functies die gebruikt worden voor het open en sluiten van tags in mijn programmeer taal. Deze functies zijn niet zo belangrijk.
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%		CONCLUSION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusie}
+Ik ben blij dat ik StateT grotendeels begrijp en heb kunnen toepassen in zowel mijn Parser als mijn Processor. Graag had ik mijn Processor iets meer uitgebreid. Hoe ik nu steeds mijn Device moet doorgeven aan elke evaluator die hem nodig heeft vind ik niet mooi. Dit kan opgelost worden door hem toe te voegen in mijn Environment. Hiervoor had ik gebruik kunnen maken van lenzen, helaas was tijd mij iets te schaars om dit correct te implementeren.
+
+Verder kan er nog veel aangepast worden aan mijn parsers. Hoe alles nu verloopt is niet altijd op de mooiste manier.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%		SAUSCODE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{Appendix Broncode}
+\lstset{style=code}
+\subsection{src/Main.hs}
+\lstinputlisting[language=Haskell]{src/Main.hs}
+\subsection{src/Parser.hs}
+\lstinputlisting[language=Haskell]{src/Parser.hs}
+\newpage
+\subsection{src/ParseData.hs}
+\lstinputlisting[language=Haskell]{src/ParseData.hs}
+\subsection{src/Processor.hs}
+\lstinputlisting[language=Haskell]{src/Processor.hs}
+\subsection{src/Utils.hs}
+\lstinputlisting[language=Haskell]{src/Utils.hs}
+
+\end{document}

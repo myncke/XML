@@ -9,6 +9,7 @@ import Control.Applicative
 
 import ParseData
 import Utils
+import MBot
 import Prelude hiding (Left, Right)
 --------------------------------------------------------------------------------
 -- Parser
@@ -123,7 +124,7 @@ parseInt = parseNat <|> parseNeg
 --------------------------------------------------------------------------------
 parseAExp :: Parser AExp
 parseAExp =  parseLit <|> parseAdd <|> parseMul <|> parseDiv <|>
-             parseSub <|> parseVar <|> parseMod
+             parseSub <|> parseVar <|> parseMod <|> jefSensor
   where
     parseAdd = parseAExp' _PLUS >>= \(d, e) -> return (Add d e)
     parseMul = parseAExp' _MUL  >>= \(d, e) -> return (Mul d e)
@@ -140,6 +141,11 @@ parseAExp =  parseLit <|> parseAdd <|> parseMul <|> parseDiv <|>
              >> parseInt >>= \n
              -> close _VALUE
              >> return (ALit n)
+    --
+    jefSensor =  open _JEF
+              >> tag _ULTRASONIC
+              >> close _JEF
+              >> return JefSensor
 
 parse2AExp :: Parser (AExp, AExp)
 parse2AExp =  parseAExp >>= \d
@@ -170,7 +176,7 @@ parseBool = true <|> false
     false = open _BOOL >> tag _FALSE >> close _BOOL >> return False
 
 parseBoolOP :: Parser BExp
-parseBoolOP = parseAnd <|> parseOr <|> parseEqualsA
+parseBoolOP = parseAnd <|> parseOr <|> parseEquals
   where
     parseAnd     =  open _AND
                  >> parseBExp >>= \p
@@ -185,11 +191,36 @@ parseBoolOP = parseAnd <|> parseOr <|> parseEqualsA
                  >> parseBExp >>= \q
                  -> close _OR
                  >> return (BBool Or p q)
-    --
-    parseEqualsA =  open _EQUALS
-                 >> parse2AExp >>= \(d, e)
-                 -> close _EQUALS
-                 >> return (ABool Equals d e)
+
+parseEquals :: Parser BExp
+parseEquals = a <|> l <|> lt <|> gt
+  where
+    a =  open _EQUALS
+      >> parse2AExp >>= \(d, e)
+      -> close _EQUALS
+      >> return (ABool Equals d e)
+    l =  open _EQUALS
+      >> open _JEF
+      >> tag _FOLLOW
+      >> close _JEF
+      >> newlines
+      >> parseBDirection >>= \q
+      -> close _EQUALS
+      >> return (BLine Equals Follow q)
+    lt = open _LT
+      >> parse2AExp >>= \(d, e)
+      -> close _LT
+      >> return (ABool Lesser d e)
+    gt =  open _GT
+      >> parse2AExp >>= \(d, e)
+      -> close _GT
+      >> return (ABool Greater d e)
+
+parseBDirection :: Parser JefLine
+parseBDirection =  (tag _LEFT       >> return (JLine LEFTB))
+               <|> (tag _RIGHT      >> return (JLine RIGHTB))
+               <|> (tag _BOTH_WHITE >> return (JLine BOTHW))
+               <|> (tag _BOTH_BLACK >> return (JLine BOTHB))
 
 --------------------------------------------------------------------------------
 -- Print Expressions
@@ -209,7 +240,7 @@ parsePExp =  a <|> s <|> b -- <|> q
 -- Jef Commands
 --------------------------------------------------------------------------------
 parseJExp :: Parser JefCommand
-parseJExp = light <|> go
+parseJExp = light <|> go <|> stop
   where
     light =  open _LIGHT
           >> parse2AExp >>= \(l, r)
@@ -222,6 +253,8 @@ parseJExp = light <|> go
           >> parseDirection >>= \d
           -> close _GO
           >> return (Go d)
+    --
+    stop  = tag _STOP >>= \_ -> return Stop
 
 parseDirection :: Parser Direction
 parseDirection = forward <|> backward <|> left <|> right
@@ -230,23 +263,6 @@ parseDirection = forward <|> backward <|> left <|> right
     backward = tag _BACKWARD >> return (Backward)
     left     = tag _LEFT     >> return (Left)
     right    = tag _RIGHT    >> return (Right)
-
-          -- (\_ d -> Go d) <$> token (char literal_GO) <*> direction)
-
-
-        --  <|> ((\_ d _ -> Go d)
-        --  <$> open _GO
-
-        -- JefCommand = SetLight Light Int Int Int
-        --   | Go Direction
-        --   | Stop
-        --     deriving (Show)
-
-
-  -- token (char literal_LIGHT) <*> integer <*> integer <*> integer <*> integer)
-  -- <|> ((\_ l -> SetLight l 0 0 0) <$> token (char literal_LIGHT_OUT) <*> integer)
-  -- <|> ((\_ d -> Go d) <$> token (char literal_GO) <*> direction)
-  -- <|> (const Stop <$> token (char literal_STOP))
 
 --------------------------------------------------------------------------------
 -- Statements

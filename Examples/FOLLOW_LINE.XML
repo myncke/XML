@@ -1,102 +1,92 @@
 <!--
 ================================================================================
-   FOLLOW LINE
+     FOLLOW LINE PROGRAMMA
 ================================================================================
 -->
 
 <while>
-  <case>
-    <bool>
-      true
-    </bool>
-    <block>
-      <print>
-        <string>
-          follow
-        </string>
-      </print>
-      <jef>
-        <go>
-          forward
-        </go>
-      </jef>
-    </block>
-  </case>
-</while>
-
-
-<ifelse>
-  <case>
-    <equals>
-      jef
-        follow
-      black
-    </equals>
-
-    <block>
-      <jef>
-        <go>
-          forward
-        </go>
-      </jef>
-    </block>
-  </case>
-  <case>
-    <bool>
-      true
-    </bool>
-    <block>
-      <ifelse>
-        <case>
-          <equals>
-            jef
-              follow
-              left
-          </equals>
-
-          <block>
-            <jef>
-              <go>
-                left
-              </go>
-            </jef>
-          </block>
-        </case>
-        <case>
-          <bool>
+    <case>
+        <bool>
             true
-          </bool>
-          <block>
+        </bool>
+        <block>
             <ifelse>
-              <case>
-                equals
-                  jef
-                    follow
-                right
-                <block>
-                  <jef>
-                    <go>
-                      right
-                    </go>
-                  </jef>
-                </block>
-              </case>
-              <case>
-                <bool>
-                  true
-                </bool>
-                <block>
-                  <jef>
-                    <go>
-                      left
-                    </go>
-                  </jef>
-                </block>
-              </case>
+                <case>
+                    <equals>
+                        <jef>
+                            follow
+                        </jef>
+                            black
+                    </equals>
+                    <block>
+                        <jef>
+                            <go>
+                                forward
+                            </go>
+                        </jef>
+                    </block>
+                </case>
+                <case>
+                    <bool>
+                        true
+                    </bool>
+                    <block>
+                        <ifelse>
+                            <case>
+                                <equals>
+                                    <jef>
+                                        follow
+                                    </jef>
+                                    left
+                                </equals>
+                                <block>
+                                    <jef>
+                                        <go>
+                                            left
+                                        </go>
+                                    </jef>
+                                </block>
+                            </case>
+                            <case>
+                                <bool>
+                                    true
+                                </bool>
+                                <block>
+                                    <ifelse>
+                                        <case>
+                                            <equals>
+                                                <jef>
+                                                    follow
+                                                </jef>
+                                                right
+                                            </equals>
+                                            <block>
+                                                <jef>
+                                                    <go>
+                                                        right
+                                                    </go>
+                                                </jef>
+                                            </block>
+                                        </case>
+                                        <case>
+                                            <bool>
+                                                true
+                                            </bool>
+                                            <block>
+                                                <jef>
+                                                    <go>
+                                                        backward
+                                                    </go>
+                                                </jef>
+                                            </block>
+                                        </case>
+                                    </ifelse>
+                                </block>
+                            </case>
+                        </ifelse>
+                    </block>
+                </case>
             </ifelse>
-          </block>
-        </case>
-      </ifelse>
-    </block>
-  </case>
-</ifelse>
+        </block>
+    </case>
+</while>

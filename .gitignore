@@ -17,3 +17,8 @@ cabal.sandbox.config
 *.eventlog
 .stack-work/
 cabal.project.local
+
+
+/indienen
+indienen.zip
+.DS_Store
